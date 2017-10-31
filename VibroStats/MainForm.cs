@@ -17,25 +17,58 @@ namespace vibromark
 {
     public partial class MainForm : Form
     {
-        private bool testing;
-        private bool sec10;
-        private bool[] keys;
-        private int[] curData;
-        private int[,] allData;
-        private float[] prevAverageBPM;
-        private float curAverageBPM;
-        private bool isRunning;
+        /// <summary>
+        /// Determines if the user is currently doing the test.
+        /// </summary>
+        private bool IsAnalyzingTest { get; set; }
+
+        /// <summary>
+        /// Determines if the vibro will last for 10 seconds. If not, it'll last for 25 seconds.
+        /// </summary>
+        private bool TenSecondMode { get; set; }
+
+        /// <summary>
+        /// Determines which keys are pressed down.
+        /// </summary>
+        private bool[] keys { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private int[] curData { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private int[,] allData { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private float[] PrevAverageBPM { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private float CurrentAverageBPM { get; set; }
+
+        /// <summary>
+        /// If the program is still running.
+        /// </summary>
+        private bool IsRunning { get; set; }
 
         delegate void SetTextCallback(string cooler, string bpma, int progressa);
 
-
+        /// <summary>
+        /// Initializes whenever the program starts.
+        /// </summary>
         public MainForm()
         {
-            isRunning = true;
+            IsRunning = true;
             keys = new bool[4];
             curData = new int[4];
             allData = new int[4, 0];
-            prevAverageBPM = new float[100];
+            PrevAverageBPM = new float[100];
             InitializeComponent();
         }
 
@@ -54,27 +87,28 @@ namespace vibromark
         {
             if (radioButton1.Checked)
             {
-                sec10 = true;
-                beginTest();
+                TenSecondMode = true;
+                BeginTest();
             }
             else
             {
-                sec10 = false;
-                beginTest();
+                TenSecondMode = false;
+                BeginTest();
             }
         }
-        private void beginTest()
+
+        private void BeginTest()
         {
-            if (!testing)
+            if (!IsAnalyzingTest)
             {
-                testing = true;
+                IsAnalyzingTest = true;
                 label2.Text = "Vibrate on assigned keys to begin";
                 label3.Text = "00.0 bpm";
                 progressBar1.Value = 0;
                 groupBox1.Hide();
                 groupBox3.Show();
-                prevAverageBPM = new float[100];
-                if (sec10)
+                PrevAverageBPM = new float[100];
+                if (TenSecondMode)
                 {
                     allData = new int[4, 500];
                 }
@@ -82,7 +116,7 @@ namespace vibromark
                 {
                     allData = new int[4, 1250];
                 }
-                Task measureVibro = Task.Factory.StartNew(() => trackTap())
+                Task measureVibro = Task.Factory.StartNew(() => TrackTap())
                     .ContinueWith((t1) => doneTrack(), TaskScheduler.FromCurrentSynchronizationContext());
             }
         }
@@ -351,53 +385,59 @@ namespace vibromark
                 frm.Show();
 
             }
-            testing = false;
+            IsAnalyzingTest = false;
         }
 
-        private void trackTap()
+        private void TrackTap()
         {
-            int a = 0;
+            int interval = 0;
             curData = new int[4];
-            while (curData[0]== 0 && curData[1] == 0 && curData[2] == 0 && curData[3] == 0 && a<200)
+
+            //Wait until a key is pressed
+            while (curData[0]== 0 && curData[1] == 0 && curData[2] == 0 && curData[3] == 0 && interval<200)
             {
                 Thread.Sleep(20);
-                a++;
+                interval++;
             }
+
+            //Start analyzing data if player has tapped within 4 seconds
             curData = new int[4];
-            if (a < 200)
+            if (interval < 200)
             {
+                //Set how long the analyze time is in miliseconds
                 int waittime = 10000;
-                if (!sec10){
-                    waittime = 25000;
-                }
-                a = 0;
-                int tempb;
-                while (a*20 < waittime)
+                if (!TenSecondMode) waittime = 25000;
+
+                //reset interval
+                interval = 0;
+
+                //Loop through until analyzing is done
+                while (interval * 20 < waittime)
                 {
-                    tempb = (int)Math.Ceiling((waittime - a*20) / 1000f);
+                    var tempb = (int)Math.Ceiling((waittime - interval * 20) / 1000f);
                     Thread.Sleep(20);
-                    curAverageBPM = 0;
+                    CurrentAverageBPM = 0;
                     for (int i = 0; i< 4; i++)
                     {
-                        allData[i, a] = curData[i];
+                        allData[i, interval] = curData[i];
                         curData[i] = 0;
-                        if (a >= 10)
+                        if (interval >= 10)
                         {
                             for (int j = 0; j < 10; j++)
                             {
-                                curAverageBPM += allData[i, a - j];
+                                CurrentAverageBPM += allData[i, interval - j];
                             }
                         }
                     }
                     for (int i = 0; i < 99; i++)
                     {
-                        prevAverageBPM[i] = prevAverageBPM[i+1];
+                        PrevAverageBPM[i] = PrevAverageBPM[i+1];
                     }
-                    prevAverageBPM[99] = curAverageBPM;
-                    curAverageBPM = prevAverageBPM.Average() * 15 * 5 / 4;
-                    this.hideTip(tempb.ToString() + " seconds remaining", Math.Round(curAverageBPM,1)+"bpm",(int)Math.Ceiling((double)(a *100* 20/waittime)));
-                    curAverageBPM = curAverageBPM * 75f / 4f;
-                    a += 1;
+                    PrevAverageBPM[99] = CurrentAverageBPM;
+                    CurrentAverageBPM = PrevAverageBPM.Average() * 15 * 5 / 4;
+                    this.hideTip(tempb.ToString() + " seconds remaining", Math.Round(CurrentAverageBPM,1)+"bpm",(int)Math.Ceiling((double)(interval * 100* 20/waittime)));
+                    CurrentAverageBPM = CurrentAverageBPM * 75f / 4f;
+                    interval += 1;
                 }
             }
         }
@@ -411,7 +451,7 @@ namespace vibromark
             }
             else
             {
-                if (isRunning)
+                if (IsRunning)
                 {
                     label2.Text = coola;
                 }
@@ -423,7 +463,7 @@ namespace vibromark
             }
             else
             {
-                if (isRunning)
+                if (IsRunning)
                 {
                     label3.Text = bpmer;
                 }
@@ -435,7 +475,7 @@ namespace vibromark
             }
             else
             {
-                if (isRunning)
+                if (IsRunning)
                 {
                     progressBar1.Value = progress;
                 }

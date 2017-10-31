@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "vibromark", "vibromark\vibromark.csproj", "{17172CCF-584B-43CE-857B-42FF8F0E3A3B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VibroStats", "VibroStats\VibroStats.csproj", "{17172CCF-584B-43CE-857B-42FF8F0E3A3B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
