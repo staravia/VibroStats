@@ -9,6 +9,7 @@ namespace vibromark
     static class Program
     {
         public static bool onlineData;
+
         [STAThread]
         static void Main()
         {
@@ -17,6 +18,7 @@ namespace vibromark
             createService();
             Application.Run(new MainForm());
         }
+
         public static void createService()
         {
 
