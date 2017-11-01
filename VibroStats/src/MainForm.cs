@@ -45,11 +45,6 @@ namespace vibromark
         /// <summary>
         /// 
         /// </summary>
-        private float[] PrevAverageBPM { get; set; }
-
-        /// <summary>
-        /// 
-        /// </summary>
         private float CurrentAverageBPM { get; set; }
 
         /// <summary>
@@ -70,7 +65,6 @@ namespace vibromark
             KeysDown = new bool[4];
             ShortData = new int[4];
             LongData = new int[4, 0];
-            PrevAverageBPM = new float[100];
             InitializeComponent();
         }
 
@@ -109,7 +103,6 @@ namespace vibromark
                 progressBar1.Value = 0;
                 groupBox1.Hide();
                 groupBox3.Show();
-                PrevAverageBPM = new float[100];
                 if (TenSecondMode)
                 {
                     LongData = new int[4, (int)(10000/SleepTime)];
@@ -421,6 +414,7 @@ namespace vibromark
                 //Set how long the analyze time is in miliseconds
                 int waittime = 10000;
                 if (!TenSecondMode) waittime = 25000;
+                float[] PrevAverageBPM = new float[10];
 
                 //reset interval
                 interval = 0;
@@ -443,14 +437,13 @@ namespace vibromark
                             }
                         }
                     }
-                    for (int i = 0; i < 99; i++)
+                    for (int i = 0; i < 9; i++)
                     {
                         PrevAverageBPM[i] = PrevAverageBPM[i+1];
                     }
-                    PrevAverageBPM[99] = CurrentAverageBPM;
-                    CurrentAverageBPM = PrevAverageBPM.Average() * 15 * SleepTime / 1000;
+                    PrevAverageBPM[9] = CurrentAverageBPM;
+                    CurrentAverageBPM = PrevAverageBPM.Average() * 15/SleepTime;
                     hideTip(tempb + " seconds remaining", Math.Round(CurrentAverageBPM,1)+"bpm",(int)Math.Ceiling((double)(interval * 100* SleepTime/ waittime)));
-                    CurrentAverageBPM = CurrentAverageBPM * 75f / 4f;
                     interval += 1;
                 }
             }
