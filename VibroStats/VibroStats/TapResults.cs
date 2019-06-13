@@ -13,6 +13,8 @@ namespace vibromark.VibroStats
         public float Accuracy;
 
         public float AverageUnstableRate;
+
+        public float HandPreference;
         
         public float GeneralUnstabilityL;
 

@@ -106,6 +106,10 @@ namespace vibromark
                 Task.Factory.StartNew(() => HandleWaitUntilTap())
                     .ContinueWith((t1) => HandleInGameAnalysis(GameModeHelper.GetGameModeLength(mode)))
                     .ContinueWith((t1) => EndAnalysis());
+                
+                
+                
+                //CreateStatsWindow(new TapResults());
             }
         }
         
@@ -151,6 +155,65 @@ namespace vibromark
             Tracker = null;
         }
 
+        private void CreateStatsWindow(TapResults results)
+        {
+            //Show Results
+            var sw = new StatsWindow();
+            
+            //TEMP
+            sw.bpmChart.Series["rhBpm"].Points.AddXY(0, 161);
+            sw.bpmChart.Series["lhBpm"].Points.AddXY(0, 161);
+            
+            //Set Text of top body
+            sw.averageBPM.Text = results.AverageBpm.ToString();
+            sw.dateText.Text = results.Date.ToString();
+
+            //Set Text of bottom body (Unstability)
+            sw.L_GeneralUnstability.Text = $"General Instability: { Math.Round(results.GeneralUnstabilityL,4) }";
+            sw.R_Unstability.Text = $"General Instability: { Math.Round(results.GeneralUnstabilityR,4) }";
+            sw.L_BpmUnstability.Text = $"BPM Unstable Rate: { Math.Round(results.BpmUnstabilityL,1) }";
+            sw.R_BpmUnstability.Text = $"BPM Unstable Rate: { Math.Round(results.BpmUnstabilityR,1) }";
+
+            //Set Text of bottom body (Average/Median BPM)
+            sw.L_medianBPM.Text = $"Median BPM: { Math.Round(results.MedianBpmL, 2) } bpm";
+            sw.R_medianBPM.Text = $"Median BPM: { Math.Round(results.MedianBpmR, 2) } bpm";
+            sw.L_peakBPM.Text = $"Peak BPM: { Math.Round(results.PeakBpmL, 2) } bpm";
+            sw.R_peakBPM.Text = $"Peak BPM: { Math.Round(results.PeakBpmR, 2) } bpm";
+
+            //Set Text of bottom body (Stamina Drain)
+            sw.L_BpmDrain.Text = $"Stamina Rate: { Math.Round(results.DrainBpmL, 2) } bpm²";
+            sw.R_bpmDrain.Text = $"Stamina Rate: { Math.Round(results.DraimBpmR, 2) } bpm²";
+            sw.L_staminaDrain.Text = $"Stamina BPM: { Math.Round(results.StaminaBpmL, 2) } bpm";
+            sw.R_staminaDrain.Text = $"Stamina BPM: { Math.Round(results.StaminaBpmR, 2) } bpm";
+            
+            //Set Hand Pref Text
+            /*
+            if (results.HandPreference == 0)  
+                handtextr = "Equal Hand Preference";
+            else if (handPref > 0) 
+                handtextr = $"{ handPref }% Left Hand Preference";
+            else 
+                handtextr = $"{ Math.Abs(handPref) }% Right Hand Preference";
+            
+            sw.handPrefText.Text = handtextr;
+*/
+            
+            //Calculate Main Vibro Stats
+            /*
+            double averageUR = ((genURl + genURr) / 2f + (bpmURl + bpmURr) / 2f);
+            double curAcc = 100 / Math.Log10(10f + ((genURl + genURr) / 2f + (bpmURl + bpmURr) / 2f) / 60f);
+            double curScore = Math.Pow(curAcc / 100, 0.8) * Math.Pow((staminaBpmL + staminaBpmR) / (Math.Max(2 * curAvgBpm, 1)), 1.4) * Math.Pow(curAvgBpm / 175, 2.2) * 2000;
+*/
+            
+            //Set Main Vibro Stat Text
+            sw.averageUR.Text = Math.Round(results.AverageUnstableRate,2).ToString();
+            sw.accText.Text = Math.Round(results.Accuracy,2)+"%";
+            sw.scoreText.Text = results.Score.ToString();
+            
+            
+            sw.Show();
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -170,6 +233,20 @@ namespace vibromark
             return data[data.Length / 2];
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="lane"></param>
+        private void HandleInGameTap(KeyLane lane)
+        {
+            if (Tracker == null)
+                return;
+            
+            Tracker.Tap(lane);
+            label3.Text = $"{Tracker.GetGeneralBpm()} bpm"; //Tracker.Data.Count.ToString();
+        }
+        
+        
         
         
         
@@ -469,19 +546,6 @@ namespace vibromark
 
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="lane"></param>
-        private void Tap(KeyLane lane)
-        {
-            if (Tracker == null)
-                return;
-            
-            Tracker.Tap(lane);
-            label3.Text = $"{Tracker.GetGeneralBpm()} bpm"; //Tracker.Data.Count.ToString();
-        }
-
         //TODO: Update key inputs
         private void kDown(object sender, KeyEventArgs e)
         {   
@@ -505,7 +569,7 @@ namespace vibromark
                         {
                             KeysDown[0] = true;
                             ShortData[0]++;
-                            Tap(KeyLane.Lane1);
+                            HandleInGameTap(KeyLane.Lane1);
                         }
                     }
                     else if ((textBox2.Text != "") && (az.Equals(textBox2.Text[0].ToString().ToUpper())))
@@ -514,7 +578,7 @@ namespace vibromark
                         {
                             KeysDown[1] = true;
                             ShortData[1]++;
-                            Tap(KeyLane.Lane2);
+                            HandleInGameTap(KeyLane.Lane2);
                         }
                     }
                     else if ((textBox3.Text != "") && (az.Equals(textBox3.Text[0].ToString().ToUpper())))
@@ -523,7 +587,7 @@ namespace vibromark
                         {
                             KeysDown[2] = true;
                             ShortData[2]++;
-                            Tap(KeyLane.Lane3);
+                            HandleInGameTap(KeyLane.Lane3);
                         }
                     }
                     else if ((textBox4.Text != "") && (az.Equals(textBox4.Text[0].ToString().ToUpper())))
@@ -532,7 +596,7 @@ namespace vibromark
                         {
                             KeysDown[3] = true;
                             ShortData[3]++;
-                            Tap(KeyLane.Lane4);
+                            HandleInGameTap(KeyLane.Lane4);
                         }
                     }
                 }
