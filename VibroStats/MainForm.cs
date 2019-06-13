@@ -52,6 +52,9 @@ namespace vibromark
         /// </summary>
         private bool IsRunning { get; set; }
 
+        /// <summary>
+        /// 
+        /// </summary>
         private const int SleepTime = 100;
 
         delegate void SetTextCallback(string cooler, string bpma, int progressa);
