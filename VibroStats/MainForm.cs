@@ -151,27 +151,23 @@ namespace vibromark
             Tracker = null;
         }
 
-        private float GetMedian(float[] source)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        private float GetMedian(float[] data)
         {
-            float[] tempwe = source;
-            Array.Sort(tempwe);
-
-            int count = tempwe.Length;
-            if (count == 0)
-            {
+            Array.Sort(data);
+            
+            if (data.Length == 0)
                 throw new InvalidOperationException("Empty collection");
-            }
-            else if (count % 2 == 0)
-            {
-                float aa = tempwe[count / 2 - 1];
-                float bb = tempwe[count / 2];
-
-                return (aa + bb) / 2f;
-            }
-            else
-            {
-                return tempwe[count / 2];
-            }
+            
+            if (data.Length % 2 == 0)
+                return (data[data.Length / 2 - 1] + data[data.Length / 2]) / 2f;
+            
+            return data[data.Length / 2];
         }
 
         
@@ -439,99 +435,6 @@ namespace vibromark
             }
             //Finish Test
             IsAnalyzingTest = false;
-        }
-
-        private void TrackTap(GameMode mode)
-        {
-            int interval = 0;
-            ShortData = new int[4];
-
-            //Wait until a key is pressed
-            while (ShortData[0]== 0 && ShortData[1] == 0 && ShortData[2] == 0 && ShortData[3] == 0 && interval<40)
-            {
-                Thread.Sleep(100);
-                interval++;
-            }
-
-            //Start analyzing data if player has tapped within 4 seconds
-            ShortData = new int[4];
-            if (interval < 40)
-            {
-                //Set how long the analyze time is in miliseconds
-                int waittime = GameModeHelper.GetGameModeLength(mode) * 1000;
-                float[] PrevAverageBPM = new float[10];
-
-                //reset interval
-                interval = 0;
-
-                //Loop through until analyzing is done
-                while (interval * SleepTime < waittime)
-                {
-                    var tempb = (int)Math.Ceiling((waittime - interval * SleepTime) / 1000f);
-                    Thread.Sleep(SleepTime);
-                    CurrentAverageBPM = 0;
-                    for (int i = 0; i< 4; i++)
-                    {
-                        LongData[i, interval] = ShortData[i];
-                        ShortData[i] = 0;
-                        if (interval >= 10)
-                        {
-                            for (int j = 0; j < 10; j++)
-                            {
-                                CurrentAverageBPM += LongData[i, interval - j];
-                            }
-                        }
-                    }
-                    for (int i = 0; i < 9; i++)
-                    {
-                        PrevAverageBPM[i] = PrevAverageBPM[i+1];
-                    }
-                    PrevAverageBPM[9] = CurrentAverageBPM;
-                    CurrentAverageBPM = PrevAverageBPM.Average() * 15/SleepTime;
-                    hideTip(tempb + " seconds remaining", Math.Round(CurrentAverageBPM,1)+"bpm",(int)Math.Ceiling((double)(interval * 100* SleepTime/ waittime)));
-                    interval += 1;
-                }
-            }
-        }
-
-        private void hideTip(string coola, string bpmer, int progress)
-        {
-            if (label2.InvokeRequired)
-            {
-                SetTextCallback d = new SetTextCallback(hideTip);
-                label2.Invoke(d, new object[] { coola, bpmer, progress });
-            }
-            else
-            {
-                if (IsRunning)
-                {
-                    label2.Text = coola;
-                }
-            }
-            if (label3.InvokeRequired)
-            {
-                SetTextCallback d = new SetTextCallback(hideTip);
-                label3.Invoke(d, new object[] { coola, bpmer, progress });
-            }
-            else
-            {
-                if (IsRunning)
-                {
-                    label3.Text = bpmer;
-                }
-            }
-            if (progressBar1.InvokeRequired)
-            {
-                SetTextCallback d = new SetTextCallback(hideTip);
-                progressBar1.Invoke(d, new object[] { coola, bpmer, progress });
-            }
-            else
-            {
-                if (IsRunning)
-                {
-                    progressBar1.Value = progress;
-                }
-            }
         }
 
         private void textBox1_Click(object sender, EventArgs e)

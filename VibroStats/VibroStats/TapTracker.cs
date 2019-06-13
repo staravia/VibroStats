@@ -28,7 +28,7 @@ namespace vibromark.VibroStats
         /// 
         /// </summary>
         /// <returns></returns>
-        public float GetGeneralBpm() => Delta > 0.5f ? Data.Count * 3.75f / Delta : 0;
+        public float GetGeneralBpm() => Delta > 0.1f ? Data.Count * 3.75f / Delta : 0;
         
         /// <summary>
         /// </summary>
