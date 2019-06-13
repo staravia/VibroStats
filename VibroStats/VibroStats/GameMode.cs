@@ -1,7 +1,8 @@
 namespace vibromark.VibroStats
 {
-    public class GameMode
+    public enum GameMode
     {
-        
+        Length10,
+        Length25
     }
 }

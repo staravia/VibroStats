@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Diagnostics;
 using System.Threading;
+using vibromark.VibroStats;
 
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
@@ -21,11 +22,6 @@ namespace vibromark
         /// Determines if the user is currently doing the test.
         /// </summary>
         private bool IsAnalyzingTest { get; set; }
-
-        /// <summary>
-        /// Determines if the vibro will last for 10 seconds. If not, it'll last for 25 seconds.
-        /// </summary>
-        private bool TenSecondMode { get; set; }
 
         /// <summary>
         /// Determines which KeysDown are pressed down.
@@ -85,18 +81,12 @@ namespace vibromark
         private void button2_Click(object sender, EventArgs e)
         {
             if (radioButton1.Checked)
-            {
-                TenSecondMode = true;
-                BeginTest();
-            }
+                BeginTest(GameMode.Length10);
             else
-            {
-                TenSecondMode = false;
-                BeginTest();
-            }
+                BeginTest(GameMode.Length25);
         }
 
-        private void BeginTest()
+        private void BeginTest(GameMode mode)
         {
             if (!IsAnalyzingTest)
             {
@@ -106,15 +96,10 @@ namespace vibromark
                 progressBar1.Value = 0;
                 groupBox1.Hide();
                 groupBox3.Show();
-                if (TenSecondMode)
-                {
-                    LongData = new int[4, (int)(10000/SleepTime)];
-                }
-                else
-                {
-                    LongData = new int[4, (int)(25000/ SleepTime)];
-                }
-                Task measureVibro = Task.Factory.StartNew(() => TrackTap())
+                LongData = new int[4, (GameModeHelper.GetGameModeLength(mode) * 1000/ SleepTime)];
+                
+                // Start the game
+                Task measureVibro = Task.Factory.StartNew(() => TrackTap(mode))
                     .ContinueWith((t1) => doneTrack(), TaskScheduler.FromCurrentSynchronizationContext());
             }
         }
@@ -354,31 +339,35 @@ namespace vibromark
                 frm.dateText.Text = DateTime.Now.ToString();
 
                 //Set Text of bottom body (Unstability)
-                frm.L_GeneralUnstability.Text = "General Instability: " + Math.Round(genURl,4);
-                frm.R_Unstability.Text = "General Instability: " + Math.Round(genURr,4);
-                frm.L_BpmUnstability.Text = "BPM Unstable Rate: " + Math.Round(bpmURl,1);
-                frm.R_BpmUnstability.Text = "BPM Unstable Rate: " + Math.Round(bpmURr,1);
+                frm.L_GeneralUnstability.Text = $"General Instability: { Math.Round(genURl,4) }";
+                frm.R_Unstability.Text = $"General Instability: { Math.Round(genURr,4) }";
+                frm.L_BpmUnstability.Text = $"BPM Unstable Rate: { Math.Round(bpmURl,1) }";
+                frm.R_BpmUnstability.Text = $"BPM Unstable Rate: { Math.Round(bpmURr,1) }";
 
                 //Set Text of bottom body (Average/Median BPM)
-                frm.L_medianBPM.Text = "Median BPM: " + Math.Round(L_medianBPM, 2) + "bpm";
-                frm.R_medianBPM.Text = "Median BPM: " + Math.Round(R_medianBPM, 2) + "bpm";
-                frm.L_peakBPM.Text = "Peak BPM: " + Math.Round(L_peakkBPM, 2) + "bpm";
-                frm.R_peakBPM.Text = "Peak BPM: " + Math.Round(R_peakBPM, 2) + "bpm";
+                frm.L_medianBPM.Text = $"Median BPM: { Math.Round(L_medianBPM, 2) } bpm";
+                frm.R_medianBPM.Text = $"Median BPM: { Math.Round(R_medianBPM, 2) } bpm";
+                frm.L_peakBPM.Text = $"Peak BPM: { Math.Round(L_peakkBPM, 2) } bpm";
+                frm.R_peakBPM.Text = $"Peak BPM: { Math.Round(R_peakBPM, 2) } bpm";
 
                 //Set Text of bottom body (Stamina Drain)
-                frm.L_BpmDrain.Text = "Stamina Rate: " + Math.Round(L_BpmDrain, 2) + "bpm²";
-                frm.R_bpmDrain.Text = "Stamina Rate: " + Math.Round(R_BpmDrain, 2) + "bpm²";
-                frm.L_staminaDrain.Text = "Stamina BPM: " + Math.Round(staminaBpmL, 2) + "bpm";
-                frm.R_staminaDrain.Text = "Stamina BPM: " + Math.Round(staminaBpmR, 2) + "bpm";
+                frm.L_BpmDrain.Text = $"Stamina Rate: { Math.Round(L_BpmDrain, 2) } bpm²";
+                frm.R_bpmDrain.Text = $"Stamina Rate: { Math.Round(R_BpmDrain, 2) } bpm²";
+                frm.L_staminaDrain.Text = $"Stamina BPM: { Math.Round(staminaBpmL, 2) } bpm";
+                frm.R_staminaDrain.Text = $"Stamina BPM: { Math.Round(staminaBpmR, 2) } bpm";
 
                 //Calculate HandPref
                 string handtextr = "";
                 double handPref = Math.Round(Math.Min(100 * ((averagebpm0.Average() + averagebpm1.Average()) / (averagebpm2.Average() + averagebpm3.Average()) - 1f), 100),1);
 
                 //Set Hand Pref Text
-                if (handPref == 0)  handtextr = "Equal Hand Preference";
-                else if (handPref > 0) handtextr = handPref + "% Left Hand Preference";
-                else handtextr = Math.Abs(handPref) + "% Right Hand Preference";
+                if (handPref == 0)  
+                    handtextr = "Equal Hand Preference";
+                else if (handPref > 0) 
+                    handtextr = $"{ handPref }% Left Hand Preference";
+                else 
+                    handtextr = $"{ Math.Abs(handPref) }% Right Hand Preference";
+                
                 frm.handPrefText.Text = handtextr;
 
                 //Calculate Main Vibro Stats
@@ -398,7 +387,7 @@ namespace vibromark
             IsAnalyzingTest = false;
         }
 
-        private void TrackTap()
+        private void TrackTap(GameMode mode)
         {
             int interval = 0;
             ShortData = new int[4];
@@ -415,8 +404,7 @@ namespace vibromark
             if (interval < 40)
             {
                 //Set how long the analyze time is in miliseconds
-                int waittime = 10000;
-                if (!TenSecondMode) waittime = 25000;
+                int waittime = GameModeHelper.GetGameModeLength(mode) * 1000;
                 float[] PrevAverageBPM = new float[10];
 
                 //reset interval
