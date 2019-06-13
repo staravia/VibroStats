@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Windows.Forms.VisualStyles;
 
 namespace vibromark.VibroStats
@@ -8,7 +9,7 @@ namespace vibromark.VibroStats
     {
         /// <summary>
         /// </summary>
-        public List<TapData> Data { get; private set; }
+        public List<TapData> Data { get; private set; } = new List<TapData>();
 
         /// <summary>
         /// </summary>
@@ -16,29 +17,35 @@ namespace vibromark.VibroStats
 
         /// <summary>
         /// </summary>
-        public TapTracker() => Initialize();
+        public TapTracker() => SetStartTime();
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        public void SetStartTime() => _startTime = DateTime.Now;
 
         /// <summary>
-        /// Initialize the TapTracker class
+        /// 
         /// </summary>
-        private void Initialize()
-        {
-            _startTime = DateTime.Now;
-        }
+        /// <returns></returns>
+        public float GetGeneralBpm() => Delta > 0.5f ? Data.Count * 3.75f / Delta : 0;
+        
+        /// <summary>
+        /// </summary>
+        public float Delta => (float)(DateTime.Now - _startTime).TotalSeconds;
 
-        public void GetResults()
+        /// <summary>
+        /// 
+        /// </summary>
+        public TapResults GetResults()
         {
-            
+            return new TapResults();
         }
         
         /// <summary>
         /// This should get called whenever the user taps a lane key.
         /// </summary>
         /// <param name="lane"></param>
-        public void Tap(KeyLane lane)
-        {
-            var delta = (DateTime.Now - _startTime).Milliseconds;
-            Data.Add(new TapData(delta, lane));
-        }
+        public void Tap(KeyLane lane) => Data.Add(new TapData(Delta, lane));
     }
 }

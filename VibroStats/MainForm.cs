@@ -19,6 +19,11 @@ namespace vibromark
     public partial class MainForm : Form
     {
         /// <summary>
+        /// 
+        /// </summary>
+        private TapTracker Tracker { get; set; }
+        
+        /// <summary>
         /// Determines if the user is currently doing the test.
         /// </summary>
         private bool IsAnalyzingTest { get; set; }
@@ -67,41 +72,83 @@ namespace vibromark
             InitializeComponent();
         }
 
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label1_Click(object sender, EventArgs e)
-        {
-
-        }
-
         private void button2_Click(object sender, EventArgs e)
         {
             if (radioButton1.Checked)
-                BeginTest(GameMode.Length10);
+                StartAnalysis(GameMode.Length10);
+            else if (radioButton2.Checked)
+                StartAnalysis(GameMode.Length25);
             else
-                BeginTest(GameMode.Length25);
+                throw new Exception("GameMode cannot be selected.");
         }
 
-        private void BeginTest(GameMode mode)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="mode"></param>
+        private void StartAnalysis(GameMode mode)
         {
             if (!IsAnalyzingTest)
             {
+                // START
                 IsAnalyzingTest = true;
-                label2.Text = "Vibrate on assigned KeysDown to begin";
+                
+                label2.Text = "Vibrate on assigned keys to begin";
                 label3.Text = "00.0 bpm";
+                
                 progressBar1.Value = 0;
                 groupBox1.Hide();
                 groupBox3.Show();
-                LongData = new int[4, (GameModeHelper.GetGameModeLength(mode) * 1000/ SleepTime)];
                 
-                // Start the game
-                Task measureVibro = Task.Factory.StartNew(() => TrackTap(mode))
-                    .ContinueWith((t1) => doneTrack(), TaskScheduler.FromCurrentSynchronizationContext());
+                Tracker = new TapTracker();
+
+
+                Task.Factory.StartNew(() => HandleWaitUntilTap())
+                    .ContinueWith((t1) => HandleInGameAnalysis(GameModeHelper.GetGameModeLength(mode)))
+                    .ContinueWith((t1) => EndAnalysis());
             }
+        }
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        private void HandleWaitUntilTap()
+        {
+            while (Tracker.Data.Count == 0)
+                Thread.Sleep(0);
+            
+            label2.Text = "";
+            Tracker.SetStartTime();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="length"></param>
+        private void HandleInGameAnalysis(int length)
+        {
+            while (Tracker.Delta < length)
+            {
+                label2.Text = $"{length - (int) Tracker.Delta} seconds remaining";
+                progressBar1.Value = (int)(100 * Tracker.Delta / length);
+                Thread.Sleep(0);
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <exception cref="Exception"></exception>
+        private void EndAnalysis()
+        {
+            if (Tracker == null)
+                throw new Exception("Tracker is null.");
+            
+            groupBox3.Hide();
+            groupBox1.Show();
+
+            IsAnalyzingTest = false;
+            Tracker = null;
         }
 
         private float GetMedian(float[] source)
@@ -127,6 +174,13 @@ namespace vibromark
             }
         }
 
+        
+        
+        
+        
+        //
+        // LEGACY
+        //
 
         private void doneTrack()
         {
@@ -512,9 +566,22 @@ namespace vibromark
 
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="lane"></param>
+        private void Tap(KeyLane lane)
+        {
+            if (Tracker == null)
+                return;
+            
+            Tracker.Tap(lane);
+            label3.Text = $"{Tracker.GetGeneralBpm()} bpm"; //Tracker.Data.Count.ToString();
+        }
+
         //TODO: Update key inputs
         private void kDown(object sender, KeyEventArgs e)
-        {
+        {   
             if (!e.Handled)
             {
                 e.Handled = true;
@@ -535,6 +602,7 @@ namespace vibromark
                         {
                             KeysDown[0] = true;
                             ShortData[0]++;
+                            Tap(KeyLane.Lane1);
                         }
                     }
                     else if ((textBox2.Text != "") && (az.Equals(textBox2.Text[0].ToString().ToUpper())))
@@ -543,6 +611,7 @@ namespace vibromark
                         {
                             KeysDown[1] = true;
                             ShortData[1]++;
+                            Tap(KeyLane.Lane2);
                         }
                     }
                     else if ((textBox3.Text != "") && (az.Equals(textBox3.Text[0].ToString().ToUpper())))
@@ -551,6 +620,7 @@ namespace vibromark
                         {
                             KeysDown[2] = true;
                             ShortData[2]++;
+                            Tap(KeyLane.Lane3);
                         }
                     }
                     else if ((textBox4.Text != "") && (az.Equals(textBox4.Text[0].ToString().ToUpper())))
@@ -559,6 +629,7 @@ namespace vibromark
                         {
                             KeysDown[3] = true;
                             ShortData[3]++;
+                            Tap(KeyLane.Lane4);
                         }
                     }
                 }
